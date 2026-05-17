@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -14,8 +15,8 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('Inventario API')
-    .setDescription('CRUD del sistema de inventario')
+    .setTitle('Inventario Super UCM')
+    .setDescription('Sistema de gestión de inventario - UCM')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);

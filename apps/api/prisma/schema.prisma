@@ -4,11 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Task {
   id          String    @id @default(cuid())
+  code        String    @unique
   title       String
   description String?
   priority    String    @default("MEDIUM")
