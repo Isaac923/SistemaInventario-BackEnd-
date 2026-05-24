@@ -24,7 +24,7 @@ export class TasksService {
 
   async findOne(id: string) {
     const task = await this.prisma.task.findUnique({ where: { id } });
-    if (!task) throw new NotFoundException('Task not found');
+    if (!task) throw new NotFoundException('Producto no encontrado');
     return task;
   }
 

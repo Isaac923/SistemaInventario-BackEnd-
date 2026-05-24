@@ -3,44 +3,46 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { Product } from './entities/task.entity';
 
-@ApiTags('Tareas')
-@Controller('tasks')
+@ApiTags('Productos')
+@Controller('productos')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Registrar un nuevo producto en el sistema' })
-  @ApiResponse({ status: 201, description: 'Producto creado exitosamente' })
+  @ApiOperation({ summary: 'Crear un producto' })
+  @ApiResponse({ status: 201, description: 'Producto creado exitosamente', type: Product })
   create(@Body() dto: CreateTaskDto) {
     return this.tasksService.create(dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos los productos del inventario' })
-  @ApiResponse({ status: 200, description: 'Lista de productos' })
+  @ApiOperation({ summary: 'Listar todos los productos' })
+  @ApiResponse({ status: 200, description: 'Lista de productos', type: Product, isArray: true })
   findAll(@Query('skip') skip = '0', @Query('take') take = '20') {
     return this.tasksService.findAll(Number(skip), Number(take));
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Buscar producto por su identificador' })
-  @ApiResponse({ status: 200, description: 'Producto encontrado' })
+  @ApiOperation({ summary: 'Obtener un producto por ID' })
+  @ApiResponse({ status: 200, description: 'Producto encontrado', type: Product })
   @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   findOne(@Param('id') id: string) {
     return this.tasksService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar datos de un producto' })
-  @ApiResponse({ status: 200, description: 'Producto actualizado' })
+  @ApiOperation({ summary: 'Actualizar un producto' })
+  @ApiResponse({ status: 200, description: 'Producto actualizado', type: Product })
   update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
     return this.tasksService.update(id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Eliminar producto del sistema' })
-  @ApiResponse({ status: 200, description: 'Producto eliminado ' })
+  @ApiOperation({ summary: 'Eliminar un producto' })
+  @ApiResponse({ status: 200, description: 'Producto eliminado' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   remove(@Param('id') id: string) {
     return this.tasksService.remove(id);
   }
