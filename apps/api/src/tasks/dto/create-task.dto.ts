@@ -1,45 +1,34 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MinLength, Matches, Validate, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
-import { PriorityValues } from './priority';
-import type { Priority } from './priority';
-
-@ValidatorConstraint({ name: 'isFutureDate', async: false })
-class IsFutureDate implements ValidatorConstraintInterface {
-  validate(date: string) {
-    return new Date(date) > new Date();
-  }
-  defaultMessage() {
-    return 'La fecha de vencimiento no puede ser en el pasado';
-  }
-}
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateTaskDto {
-  @ApiProperty({ description: 'Código único del producto', example: 'SKU-001' })
+  @ApiProperty()
   @IsString()
-  @IsNotEmpty({ message: 'El código no puede estar vacío' })
-  @MinLength(3, { message: 'El código debe tener al menos 3 caracteres' })
+  @IsNotEmpty()
   code!: string;
 
-  @ApiProperty({ description: 'Título del Producto', minLength: 3, example: 'Producto nuevo' })
+  @ApiProperty()
   @IsString()
-  @IsNotEmpty({ message: 'El título no puede estar vacío' })
-  @MinLength(3, { message: 'El título debe tener al menos 3 caracteres' })
+  @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ required: false, description: 'Descripción del Producto', example: 'Descripción del producto' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  @MinLength(5, { message: 'La descripción debe tener al menos 5 caracteres' })
   description?: string;
 
-  @ApiProperty({ enum: PriorityValues, default: 'MEDIUM', description: 'Prioridad del Producto', example: 'MEDIUM' })
+  @ApiProperty({ default: 0 })
   @IsOptional()
-  @IsEnum(PriorityValues, { message: 'La prioridad debe ser LOW, MEDIUM o HIGH' })
-  priority?: Priority = 'MEDIUM';
+  @IsNumber()
+  cantidad?: number = 0;
 
-  @ApiProperty({ required: false, description: 'Fecha de vencimiento (formato YYYY-MM-DD)', example: '2026-12-31' })
+  @ApiProperty({ default: 0 })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha debe tener formato YYYY-MM-DD, ejemplo: 2026-12-31' })
-  @Validate(IsFutureDate)
+  @IsNumber()
+  precio?: number = 0;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
   dueDate?: string;
 }

@@ -9,13 +9,13 @@ export class TasksService {
 
   create(dto: CreateTaskDto) {
     const { dueDate, ...rest } = dto;
-    return this.prisma.task.create({
+    return this.prisma.producto.create({
       data: { ...rest, dueDate: dueDate ? new Date(dueDate) : null },
     });
   }
 
   findAll(skip = 0, take = 20) {
-    return this.prisma.task.findMany({
+    return this.prisma.producto.findMany({
       orderBy: { createdAt: 'desc' },
       skip,
       take,
@@ -23,15 +23,15 @@ export class TasksService {
   }
 
   async findOne(id: string) {
-    const task = await this.prisma.task.findUnique({ where: { id } });
-    if (!task) throw new NotFoundException('Producto no encontrado');
-    return task;
+    const producto = await this.prisma.producto.findUnique({ where: { id } });
+    if (!producto) throw new NotFoundException('Producto no encontrado');
+    return producto;
   }
 
   async update(id: string, dto: UpdateTaskDto) {
     await this.findOne(id);
     const { dueDate, ...rest } = dto;
-    return this.prisma.task.update({
+    return this.prisma.producto.update({
       where: { id },
       data: {
         ...rest,
@@ -44,7 +44,7 @@ export class TasksService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.prisma.task.delete({ where: { id } });
+    await this.prisma.producto.delete({ where: { id } });
     return { ok: true };
   }
 }
