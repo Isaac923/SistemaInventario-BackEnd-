@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Usuario {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  nombre       String?
+  passwordHash String
+  productos    Producto[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
 model Producto {
   id          String    @id @default(cuid())
   code        String    @unique
@@ -17,4 +27,10 @@ model Producto {
   dueDate     DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  // RELACIÓN: cada producto pertenece a un usuario (cajero/admin)
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
 }

@@ -1,0 +1,142 @@
+# Prompt para generar presentación PowerPoint - SistemaInventario Auth
+
+---
+
+## Copia y pega este prompt en tu herramienta favorita (Gamma, Tome, Copilot PowerPoint, Beautiful.ai, Canva, etc.)
+
+---
+
+### PROMPT:
+
+> **Tema:** "Implementación de Autenticación JWT en SistemaInventario - Backend NestJS + Frontend React"
+> 
+> **Objetivo:** Presentar cómo se cumplió cada requisito del checklist de autenticación (9 puntos), mostrando arquitectura, código clave y evidencias. Resultado final: **9/9 puntos ✅**
+> 
+> **Estructura de diapositivas (12-14 slides):**
+> 
+> **Slide 1 - Portada**
+> - Título: "SistemaInventario - Autenticación JWT Completa"
+> - Subtítulo: "NestJS + Prisma + PostgreSQL | React + Vite + TanStack Query"
+> - Checklist: 9/9 ✅ | Autor / Fecha
+> 
+> **Slide 2 - Arquitectura General**
+> - Diagrama: Monorepo pnpm (apps/api + apps/web)
+> - Stack: NestJS 11, Prisma ORM, PostgreSQL, JWT, Passport, bcrypt
+> - Frontend: React 19, Vite, React Query, Axios
+> 
+> **Slide 3 - Checklist Overview (Resumen Ejecutivo)**
+> - Tabla 9 filas × 2 columnas: Ítem | Estado (✅)
+> - Resaltar: 9/9 completados (DTOs corregidos con @IsEmail + @MinLength)
+> 
+> **Slide 4 - Modelo Prisma y Relaciones (Ítem 1)**
+> - Código schema.prisma: Usuario + Producto
+> - Destacar: `usuarioId`, `@relation(onDelete: Cascade)`, `@@index([usuarioId])`
+> - Captura de ER diagram o tabla SQL
+> 
+> **Slide 5 - Migraciones y Base de Datos (Ítem 2)**
+> - Nombres de migraciones con timestamp
+> - SQL generado: FK con CASCADE, INDEX en usuarioId
+> - Evidencia: pgAdmin / DBeaver / Prisma Studio
+> 
+> **Slide 6 - Dependencias y Configuración Auth (Ítem 3)**
+> - package.json: @nestjs/jwt, @nestjs/passport, passport-jwt, bcrypt
+> - .env: JWT_SECRET, JWT_EXPIRES=86400, ADMIN_EMAIL, ADMIN_PASSWORD
+> - main.ts: seedAdmin() en bootstrap (crea admin@supermercado.cl / admin123)
+> 
+> **Slide 7 - UsersService (Ítem 4)**
+> - Código: create() con ConflictException + bcrypt.hash(10)
+> - Métodos: findByEmail(), findById()
+> - Flujo: validación → hash → persistir
+> 
+> **Slide 8 - DTOs con Validación (Ítem 5) ⭐ CORREGIDO**
+> - SignUpDto: @IsEmail() email, @MinLength(6) password, adminPassword
+> - LoginDto: @IsEmail() email, @MinLength(6) password
+> - class-validator + ValidationPipe (whitelist, transform)
+> - Demo: payload inválido → 400 Bad Request
+> 
+> **Slide 9 - Estrategia JWT + Guard + Decorador (Ítem 6)**
+> - JwtStrategy: ExtractJwt.fromAuthHeaderAsBearerToken(), secretOrKey
+> - JwtAuthGuard: extiende AuthGuard('jwt')
+> - @UsuarioActual(): createParamDecorator → { sub, username }
+> - Payload JWT: { sub: userId, email }
+> 
+> **Slide 10 - AuthService + Controller (Ítem 7)**
+> - signup(): valida adminPassword → create user → firmarToken()
+> - login(): findByEmail → bcrypt.compare → firmarToken()
+> - firmarToken(): jwt.sign({ sub, email }, expiresIn numérico)
+> - Endpoints: POST /auth/signup, POST /auth/login, GET /auth/me
+> 
+> **Slide 11 - Configuración de Módulos (Ítem 8)**
+> - AuthModule: JwtModule.register(secret, signOptions), imports UsuariosModule
+> - UsuariosModule: exports UsersService
+> - AppModule: importa AuthModule + UsuariosModule
+> 
+> **Slide 12 - Protección por Usuario - Ownership (Ítem 9)**
+> - TasksController: @UseGuards(JwtAuthGuard) + @UsuarioActual()
+> - TasksService: filtra where: { usuarioId: userId } en TODAS las operaciones
+> - findOne verifica ownership → 404 si no es dueño
+> - update/remove llaman findOne primero (defensa en profundidad)
+> 
+> **Slide 13 - Flujo Completo Demo (Swagger / Frontend)**
+> - 1. POST /auth/signup (con adminPassword) → 201 + token
+> - 2. POST /auth/login → 201 + token
+> - 3. GET /auth/me (Bearer) → 200 user payload
+> - 4. CRUD Productos (Bearer) → solo ve/modifica los suyos
+> - Frontend: Login con email/password, logout button, SKU auto-generado
+> - Capturas Swagger UI o frontend
+> 
+> **Slide 14 - Conclusiones y Próximos Pasos**
+> - ✅ Auth robusta, ownership correcto, validaciones activas, seed admin
+> - Pendientes: Refresh tokens, roles/permisos, rate limiting, tests e2e
+> - Contacto / Repo
+> 
+> **Estilo visual:**
+> - Tema oscuro (background #0f172a, acento #3b82f6 / #10b981)
+> - Código con syntax highlighting (Monokai / Dracula)
+> - Diagramas simples (Mermaid o cajas/flechas)
+> - Tipografía: system-ui / Inter
+> - Badges de estado: ✅ Verde
+> 
+> **Notas del presentador:** Incluir en cada slide detalles técnicos para explicar (líneas de archivo, decisiones de diseño, por qué se usó cada patrón).
+
+---
+
+## Archivos de referencia para capturas/evidencias:
+
+- `apps/api/prisma/schema.prisma`
+- `apps/api/prisma/migrations/*/migration.sql`
+- `apps/api/.env`
+- `apps/api/package.json`
+- `apps/api/src/main.ts` (seedAdmin)
+- `apps/api/src/usuarios/usuarios.service.ts`
+- `apps/api/src/auth/dto/signup.dto.ts`
+- `apps/api/src/auth/dto/login.dto.ts`
+- `apps/api/src/auth/jwt.strategy.ts`
+- `apps/api/src/auth/jwt.guard.ts`
+- `apps/api/src/auth/usuario-actual.decorator.ts`
+- `apps/api/src/auth/auth.service.ts`
+- `apps/api/src/auth/auth.controller.ts`
+- `apps/api/src/auth/auth.module.ts`
+- `apps/api/src/usuarios/usuarios.module.ts`
+- `apps/api/src/tasks/tasks.service.ts`
+- `apps/api/src/tasks/tasks.controller.ts`
+- `apps/api/src/app.module.ts`
+- `apps/web/src/Auth.tsx`
+- `apps/web/src/App.tsx` (logout button + SKU auto)
+- `apps/web/src/main.tsx`
+- `VERIFICACION_AUTH.txt` (reporte completo 9/9 ✅)
+
+---
+
+## Herramientas recomendadas:
+
+1. **Gamma.app** - Pega el prompt, genera en 30 seg
+2. **Tome.app** - Similar, buen diseño
+3. **Copilot en PowerPoint** - "Crea presentación basada en este outline..."
+4. **Beautiful.ai** - Auto-formato
+5. **Canva Presentations** - Más control visual manual
+6. **Marp / Markdown** - Si prefieres código: `pandoc` o VS Code + Marp
+
+---
+
+¡Listo para presentar con 9/9 ✅!

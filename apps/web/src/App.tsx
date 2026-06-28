@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type Producto = {
   id: string;
@@ -11,7 +11,7 @@ type Producto = {
   precio: number;
 };
 
-export default function App() {
+export default function App({ onLogout }: { onLogout?: () => void }) {
   const qc = useQueryClient();
 
   const { data: productos, isLoading, error } = useQuery<Producto[]>({
@@ -25,6 +25,14 @@ export default function App() {
   const [cantidad, setCantidad] = useState('');
   const [precio, setPrecio] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+  // Auto-generar SKU al abrir el formulario
+  useEffect(() => {
+    if (showForm) {
+      const nextNum = (productos?.length ?? 0) + 1;
+      setCode(`SKU-${String(nextNum).padStart(3, '0')}`);
+    }
+  }, [showForm, productos?.length]);
 
   const create = useMutation({
     mutationFn: async () =>
@@ -64,11 +72,18 @@ export default function App() {
             <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Sistema de gestión de productos</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{ padding: '10px 20px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-          {showForm ? '✕ Cancelar' : '+ Nuevo Producto'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{ padding: '10px 20px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {showForm ? '✕ Cancelar' : '+ Nuevo Producto'}
+          </button>
+          <button
+            onClick={onLogout}
+            style={{ padding: '10px 20px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            🚪 Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1rem' }}>

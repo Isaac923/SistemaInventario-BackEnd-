@@ -1,36 +1,53 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller, Get, Post, Body, Patch, Param,
+  Delete, Query, UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt.guard';
+import { UsuarioActual } from '../auth/usuario-actual.decorator';
 
-@ApiTags('Productos')
+type JwtUsuario = { sub: string; username: string };
+
+@ApiTags('productos')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('productos')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(@Body() dto: CreateTaskDto) {
-    return this.tasksService.create(dto);
+  create(@UsuarioActual() usuario: JwtUsuario, @Body() dto: CreateTaskDto) {
+    return this.tasksService.create(usuario.sub, dto);
   }
 
   @Get()
-  findAll(@Query('skip') skip = '0', @Query('take') take = '20') {
-    return this.tasksService.findAll(Number(skip), Number(take));
+  findAll(
+    @UsuarioActual() usuario: JwtUsuario,
+    @Query('skip') skip = '0',
+    @Query('take') take = '20',
+  ) {
+    return this.tasksService.findAll(usuario.sub, Number(skip), Number(take));
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(id);
+  findOne(@UsuarioActual() usuario: JwtUsuario, @Param('id') id: string) {
+    return this.tasksService.findOne(usuario.sub, id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
-    return this.tasksService.update(id, dto);
+  update(
+    @UsuarioActual() usuario: JwtUsuario,
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskDto,
+  ) {
+    return this.tasksService.update(usuario.sub, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(id);
+  remove(@UsuarioActual() usuario: JwtUsuario, @Param('id') id: string) {
+    return this.tasksService.remove(usuario.sub, id);
   }
 }
