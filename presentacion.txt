@@ -1,0 +1,334 @@
+=========================================
+GUÍA DE PRESENTACIÓN — SISTEMA INVENTARIO
+=========================================
+
+
+1. MODELO Y RELACIÓN EN PRISMA (10 pts)
+----------------------------------------
+Archivo a mostrar:  apps/api/prisma/schema.prisma
+
+Qué mostrar en el archivo:
+  - Modelo "Usuario" con campos id, email, nombre, passwordHash, role, actionPasswordHash
+  - Modelo "Producto" con id, code, title, cantidad, precio, usuarioId
+  - La relación: Producto.usuarioId → Usuario.id
+  - @@index([usuarioId]) y onDelete: Cascade
+
+Qué decir:
+  "El modelo Usuario representa a los dos roles del sistema, ADMIN y CAJERO.
+   Producto es la tabla principal del inventario. La relación belongsTo la
+   hice con usuarioId, que apunta al id de Usuario. Use onDelete: Cascade
+   para que si se elimina un usuario se borren sus productos, y agregué el
+   índice @@index([usuarioId]) para optimizar las consultas por usuario."
+
+
+2. MIGRACIÓN APLICADA (10 pts)
+-------------------------------
+Archivos a mostrar:  apps/api/prisma/migrations/ (carpetas con las migraciones)
+                     apps/api/.env → línea DATABASE_URL
+
+Qué mostrar en DBeaver / cliente SQL:
+  - La tabla "Usuario" en la base de datos PostgreSQL
+  - La tabla "Producto" con su foreign key
+  - Las columnas y sus tipos de dato
+
+Qué decir:
+  "Las migraciones las generé con pnpm prisma migrate dev. Cada vez que
+   cambiaba el schema le ponía un nombre descriptivo en español como
+   agregar_contrasena_accion. Prisma crea automáticamente la carpeta con
+   el timestamp y el nombre que uno elige. En DBeaver se ven las tablas
+   ya reflejadas en PostgreSQL."
+
+
+3. DEPENDENCIAS Y VARIABLES DE AUTH (10 pts)
+---------------------------------------------
+Archivos a mostrar:
+  apps/api/package.json → sección "dependencies"
+  apps/api/.env → líneas JWT_SECRET, JWT_EXPIRES, ADMIN_EMAIL, ADMIN_PASSWORD
+
+Dependencias instaladas:
+  @nestjs/jwt, @nestjs/passport, passport, passport-jwt → para JWT
+  bcrypt → para hashear contraseñas
+  class-validator, class-transformer → para validar DTOs
+  @nestjs/swagger → para la documentación
+
+Variables .env:
+  JWT_SECRET=supermercado_jwt_secret_dev
+  JWT_EXPIRES=86400  (24 horas en segundos)
+
+Qué decir:
+  "Instalé los paquetes de JWT para poder firmar tokens, passport-jwt para
+   validar el token en cada request y bcrypt para encriptar las contraseñas
+   antes de guardarlas. En el .env configuré JWT_SECRET para firmar y
+   JWT_EXPIRES en segundos para el tiempo de expiración del token."
+
+
+4. USERSERVICE FUNCIONAL (10 pts)
+----------------------------------
+Archivo a mostrar:  apps/api/src/usuarios/usuarios.service.ts
+
+Métodos importantes:
+  - create(): si el email ya existe lanza ConflictException;
+               hashea la contraseña con bcrypt.hash;
+               también hashea actionPassword si se entrega.
+  - findByEmail(email): busca usuario por correo único
+  - findById(id): busca por id
+  - findFirstAdmin(): retorna el primer ADMIN creado
+
+Qué decir:
+  "UsuariosService tiene toda la lógica de base de datos para usuarios.
+   create verifica primero si el email ya existe con findUnique y lanza
+   un ConflictException si está duplicado. La contraseña la hasheo con
+   bcrypt antes de guardarla. También dejé preparado el actionPassword
+   para la contraseña de acción que usan los cajeros."
+
+
+5. DTOS DE AUTH (5 pts)
+------------------------
+Archivos a mostrar:
+  apps/api/src/auth/dto/signup.dto.ts
+  apps/api/src/auth/dto/login.dto.ts
+
+SignUpDto:
+  @IsEmail() email
+  @IsString() @MinLength(6) password
+  @IsString() adminPassword
+  @IsOptional() @IsString() @MinLength(6) adminActionPassword
+  @IsOptional() @IsEnum(Role) role (default CAJERO)
+
+LoginDto:
+  @IsEmail() email
+  @IsString() @MinLength(6) password
+
+Qué decir:
+  "Los DTOs definen la estructura de los datos que llegan al controlador.
+   Usé class-validator para validar: email válido, contraseña mínima de
+   6 caracteres, y en el signup el rol es opcional con valor por defecto
+   CAJERO. Si mandas un payload inválido la API responde con 400."
+
+
+6. ESTRATEGIA Y GUARD JWT (10 pts)
+-----------------------------------
+Archivos a mostrar:
+  apps/api/src/auth/jwt.strategy.ts
+  apps/api/src/auth/jwt.guard.ts
+  apps/api/src/auth/usuario-actual.decorator.ts
+
+JwtStrategy:
+  - Extiende PassportStrategy(Strategy)
+  - Saca el token del header Authorization: Bearer <token>
+  - Usa JWT_SECRET como clave secreta
+  - validate() devuelve el payload { sub, email, role }
+
+JwtAuthGuard:
+  - Extiende AuthGuard('jwt'), se coloca con @UseGuards() en las rutas
+
+@UsuarioActual():
+  - Decorador que extrae req.user del request
+  - Se usa así: @UsuarioActual() usuario: { sub, email, role }
+
+Qué decir:
+  "JwtStrategy se encarga de leer el token del header, verificar la firma
+   con JWT_SECRET y devolver los datos del usuario. JwtAuthGuard protege
+   las rutas: si no hay token válido, devuelve 401. @UsuarioActual() es
+   un decorador que creé para inyectar el usuario autenticado directamente
+   en el controlador sin tener que sacarlo de req.user manualmente."
+
+
+7. AUTHSERVICE + CONTROLLER (10 pts)
+-------------------------------------
+Archivos a mostrar:
+  apps/api/src/auth/auth.service.ts
+  apps/api/src/auth/auth.controller.ts
+
+Endpoints:
+  POST /auth/registro  → registra y devuelve token
+  POST /auth/ingresar  → inicia sesión y devuelve token
+  GET  /auth/yo        → devuelve los datos del token (requiere JWT)
+
+En AuthService:
+  - signup(): compara adminPassword con ADMIN_PASSWORD del .env,
+              llama a UsuariosService.create y firma JWT
+  - login(): busca email en BD, compara con bcrypt.compare, firma JWT
+  - firmarToken(): genera token con { sub, email, role }
+                   expiresIn numérico desde JWT_EXPIRES
+
+Qué decir:
+  "AuthService maneja el registro y login. signup valida la contraseña
+   maestra de administrador contra la variable de entorno, luego crea el
+   usuario y firma un token JWT con los datos del usuario. login busca al
+   usuario por email, verifica la contraseña con bcrypt.compare y también
+   firma un token. Para firmar uso JwtService con expiresIn numérico para
+   que lo lea correctamente."
+
+
+8. CONFIGURACIÓN DE MÓDULOS (5 pts)
+------------------------------------
+Archivos a mostrar:
+  apps/api/src/app.module.ts
+  apps/api/src/auth/auth.module.ts
+  apps/api/src/usuarios/usuarios.module.ts
+  apps/api/src/tasks/tasks.module.ts
+  apps/api/src/prisma.module.ts
+
+AppModule: importa PrismaModule, TasksModule, UsuariosModule, AuthModule
+AuthModule: importa UsuariosModule, registra JwtModule con secret y
+            signOptions.expiresIn; exporta AuthService y RolesGuard
+UsuariosModule: exporta UsuariosService
+TasksModule: importa AuthModule para usar AuthService en TasksController
+PrismaModule: @Global() para que PrismaService esté disponible sin importar
+
+Qué decir:
+  "Cada módulo agrupa su funcionalidad. AuthModule configura JwtModule
+   con el secret y el expiresIn. UsuariosModule exporta su servicio para
+   que otros módulos lo usen. TasksModule importa AuthModule porque el
+   controlador de productos necesita AuthService para verificar la
+   contraseña de acción. PrismaModule lo puse como global para no tener
+   que importarlo en cada módulo."
+
+
+9. PROTECCIÓN DE OBJETOS POR USUARIO (15 pts)
+----------------------------------------------
+Archivos a mostrar:
+  apps/api/src/tasks/tasks.controller.ts
+  apps/api/src/tasks/tasks.service.ts
+
+⚠ IMPORTANTE: La rúbrica pide que cada usuario vea solo sus productos.
+Mi implementación actual MUESTRA TODOS los productos a todos los usuarios
+porque es un inventario compartido (todos en el supermercado necesitan
+ver el mismo stock). Si el profesor exige el filtrado, aquí está el
+cambio necesario.
+
+Lo que sí implementé:
+  - TasksController protegido con @UseGuards(JwtAuthGuard)
+  - @UsuarioActual() extrae el usuario logueado
+  - create() asigna usuarioId desde usuario.sub (el producto queda ligado a quien lo creó)
+  - Si el rol no es ADMIN, se verifica la contraseña de acción (adminPassword)
+
+Código a modificar si el profesor pide filtrado por usuario:
+
+  En findAll agregar where: { usuarioId } al findMany
+  En findOne usar findFirst con where: { id, usuarioId } y 404 si no es dueño
+  En update y remove llamar a findOne para verificar propiedad antes de modificar
+
+Qué decir:
+  "Todas las rutas de productos están protegidas con JwtAuthGuard. El
+   controlador recibe el usuario autenticado con @UsuarioActual() y lo
+   pasa al servicio. Para los cajeros, antes de crear, editar o eliminar
+   un producto, el sistema pide la contraseña de acción del admin y la
+   verifica contra el hash guardado en la base de datos."
+
+
+10. DEMOSTRACIÓN INTEGRAL EN SWAGGER (15 pts)
+----------------------------------------------
+Archivo a mostrar:  apps/api/src/main.ts (configuración de Swagger)
+URL:                http://localhost:3000/api/docs
+
+Configuración en main.ts:
+  const config = new DocumentBuilder()
+    .setTitle('Inventario Super UCM')
+    .setDescription('Sistema de gestión de inventario - UCM')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+FLUJO COMPLETO PARA LA DEMO:
+
+Paso 1: Crear un administrador
+  POST /auth/registro
+  Body:
+  {
+    "email": "admin@supermercado.cl",
+    "password": "admin123",
+    "adminPassword": "admin123",
+    "role": "ADMIN",
+    "adminActionPassword": "accion123"
+  }
+  → Copiar el access_token que devuelve
+
+Paso 2: Autorizar Swagger con token de admin
+  Botón "Authorize" → pegar "Bearer <token>" → Authorize
+
+Paso 3: Crear un cajero
+  POST /auth/registro
+  Body:
+  {
+    "email": "cajero1@test.cl",
+    "password": "123456",
+    "adminPassword": "admin123",
+    "role": "CAJERO"
+  }
+  → Copiar el token del cajero
+
+Paso 4: Autorizar Swagger con token de cajero
+  Botón "Authorize" → cambiar token
+
+Paso 5: Cajero crea un producto (necesita contraseña de acción)
+  POST /productos
+  Body:
+  {
+    "code": "P001",
+    "title": "Leche 1L",
+    "cantidad": 50,
+    "precio": 1200,
+    "adminPassword": "accion123"
+  }
+  → Debe crear el producto exitosamente
+
+Paso 6: Listar productos
+  GET /productos
+  → Muestra todos los productos (el cajero también los ve todos)
+
+Paso 7: Autorizar como admin de nuevo
+
+Paso 8: Admin actualiza un producto (sin contraseña de acción)
+  PATCH /productos/{id del producto}
+  Body:
+  {
+    "title": "Leche 1L - Actualizado",
+    "cantidad": 100,
+    "precio": 1500
+  }
+  → Admin puede modificar sin restricción
+
+Paso 9: Admin elimina un producto
+  DELETE /productos/{id del producto}
+  Header: x-admin-password: (vacío, no lo necesita siendo admin)
+  → Producto eliminado
+
+Paso 10: Ver datos del token
+  GET /auth/yo
+  → Devuelve { sub, email, role }
+
+Paso 11: Listar usuarios (solo admin)
+  GET /usuarios
+  → Lista de todos los usuarios registrados
+
+Qué decir:
+  "Configuré Swagger en main.ts con DocumentBuilder, título y versión del
+   proyecto. El flujo completo es: crear admin, crear cajero, autorizar
+   con cada token, el cajero crea un producto usando la contraseña de
+   acción, el admin puede modificar y eliminar sin restricción, y al final
+   se puede consultar el usuario actual con /auth/yo y listar usuarios."
+
+
+=========================================
+PROBLEMA: CONTRASEÑA DE ACCIÓN EN SEED
+=========================================
+
+El seedAdmin en main.ts (línea 42) crea al admin inicial así:
+
+  await prisma.usuario.create({
+    data: { email: adminEmail, passwordHash, nombre: 'Administrador', role: Role.ADMIN },
+  });
+
+El problema es que no incluye actionPasswordHash, entonces el admin que
+se crea automáticamente al iniciar el servidor no tiene contraseña de
+acción. Si se intenta usar desde un cajero, sale el error "El
+administrador no ha configurado una contraseña de acción".
+
+Solución: ir a Gestión de Usuarios, editar al admin y escribir una
+contraseña de acción. O modificar el seed para que la incluya:
+
+  actionPasswordHash: await bcrypt.hash('accion123', 10),

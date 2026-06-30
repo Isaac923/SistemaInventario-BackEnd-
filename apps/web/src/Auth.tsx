@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { api } from './api';
 
+type Role = 'ADMIN' | 'CAJERO';
+
 export default function Auth({ onLogged }: { onLogged: () => void }) {
   const [mode, setMode]       = useState<'login' | 'signup'>('login');
   const [email, setEmail]     = useState('');
   const [password, setPass]   = useState('');
   const [adminPass, setAdmin] = useState('');
+  const [adminActionPass, setAdminAction] = useState('');
+  const [role, setRole]       = useState<Role>('CAJERO');
   const [loading, setLoading] = useState(false);
   const [err, setErr]         = useState<string | null>(null);
 
@@ -15,6 +19,7 @@ export default function Auth({ onLogged }: { onLogged: () => void }) {
     setEmail('');
     setPass('');
     setAdmin('');
+    setAdminAction('');
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -22,19 +27,24 @@ export default function Auth({ onLogged }: { onLogged: () => void }) {
     if (!email.trim() || !password.trim()) { setErr('Completa todos los campos requeridos.'); return; }
     if (password.length < 6) { setErr('La contraseña debe tener al menos 6 caracteres.'); return; }
     if (mode === 'signup' && !adminPass.trim()) { setErr('Se requiere la contraseña de administrador.'); return; }
+    if (mode === 'signup' && role === 'ADMIN' && !adminActionPass.trim()) { setErr('El administrador debe tener una contraseña de acción.'); return; }
     setLoading(true);
     setErr(null);
     try {
-      const url  = mode === 'login' ? '/auth/login' : '/auth/signup';
-      const body = mode === 'login'
+      const url  = mode === 'login' ? '/auth/ingresar' : '/auth/registro';
+      const body: any = mode === 'login'
         ? { email, password }
-        : { email, password, adminPassword: adminPass };
+        : { email, password, adminPassword: adminPass, role };
+      if (mode === 'signup' && role === 'ADMIN' && adminActionPass.trim()) {
+        body.adminActionPassword = adminActionPass;
+      }
       const { data } = await api.post(url, body);
       localStorage.setItem('token', data.access_token);
       onLogged();
     } catch (e: any) {
       const msg = e?.response?.data?.message;
-      setErr(Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Error al autenticar'));
+      const status = e?.response?.status;
+      setErr(Array.isArray(msg) ? msg.join(', ') : (msg ?? (status ? `Error ${status}` : 'No se pudo conectar con el servidor')));
     } finally {
       setLoading(false);
     }
@@ -220,6 +230,38 @@ export default function Auth({ onLogged }: { onLogged: () => void }) {
                     placeholder="Contraseña del admin"
                     value={adminPass} onChange={e => setAdmin(e.target.value)}
                   />
+                </div>
+              </div>
+            )}
+
+            {/* Contraseña de acción — solo para admin */}
+            {mode === 'signup' && role === 'ADMIN' && (
+              <div style={S.field}>
+                <label style={S.label}>Contraseña de acción (para cajeros)</label>
+                <div style={S.inputWrap}>
+                  <span style={S.icon}>🔑</span>
+                  <input
+                    style={S.input} type="password"
+                    placeholder="Los cajeros la usarán para modificar productos"
+                    value={adminActionPass} onChange={e => setAdminAction(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Selector de rol — solo en signup */}
+            {mode === 'signup' && (
+              <div style={S.field}>
+                <label style={S.label}>Rol</label>
+                <div style={S.inputWrap}>
+                  <span style={S.icon}>👤</span>
+                  <select
+                    style={{ ...S.input, paddingRight: 36, appearance: 'none' }}
+                    value={role} onChange={e => setRole(e.target.value as Role)}
+                  >
+                    <option value="CAJERO">🧾 Cajero</option>
+                    <option value="ADMIN">🛡️ Administrador (todo)</option>
+                  </select>
                 </div>
               </div>
             )}

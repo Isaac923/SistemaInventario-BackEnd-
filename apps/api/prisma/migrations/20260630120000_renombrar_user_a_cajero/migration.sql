@@ -1,0 +1,2 @@
+-- Rename enum value USER to CAJERO
+ALTER TYPE "Role" RENAME VALUE 'USER' TO 'CAJERO';

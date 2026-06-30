@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { JwtStrategy } from './jwt.strategy';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { JwtStrategy } from './jwt.strategy';
       signOptions: { expiresIn: Number(process.env.JWT_EXPIRES) ?? 86400 },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesGuard],
   controllers: [AuthController],
+  exports: [RolesGuard, AuthService],
 })
 export class AuthModule {}

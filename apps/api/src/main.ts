@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaService } from './prisma.service';
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 async function bootstrap() {
@@ -20,6 +21,7 @@ async function bootstrap() {
     .setTitle('Inventario Super UCM')
     .setDescription('Sistema de gestión de inventario - UCM')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
@@ -38,19 +40,19 @@ async function seedAdmin(prisma: PrismaService) {
   if (!existing) {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     await prisma.usuario.create({
-      data: { email: adminEmail, passwordHash, nombre: 'Administrador' },
+      data: { email: adminEmail, passwordHash, nombre: 'Administrador', role: Role.ADMIN },
     });
     console.log(`Admin creado: ${adminEmail}`);
+  } else if (existing.role !== Role.ADMIN) {
+    const passwordHash = await bcrypt.hash(adminPassword, 10);
+    await prisma.usuario.update({
+      where: { email: adminEmail },
+      data: { role: Role.ADMIN, passwordHash },
+    });
+    console.log(`Admin actualizado a ADMIN: ${adminEmail}`);
   } else {
     console.log(`Admin ya existe: ${adminEmail}`);
   }
 }
 
-bootstrap();
-
-const config = new DocumentBuilder()
-  .setTitle('Supermercado API')
-  .setDescription('API de gestión de productos por usuario')
-  .setVersion('1.0')
-  .addBearerAuth()   // ← IMPORTANTE
-  .build(); 
+bootstrap(); 

@@ -12,9 +12,16 @@ model Usuario {
   email        String     @unique
   nombre       String?
   passwordHash String
+  role         Role       @default(CAJERO)
+  actionPasswordHash String?
   productos    Producto[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CAJERO
 }
 
 model Producto {
@@ -24,11 +31,10 @@ model Producto {
   description String?
   cantidad    Int       @default(0)
   precio      Float     @default(0.0)
-  dueDate     DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // RELACIÓN: cada producto pertenece a un usuario (cajero/admin)
+  
   usuarioId String
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 

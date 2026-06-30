@@ -18,9 +18,6 @@ export class Product {
   @ApiProperty({ description: 'Prioridad del producto', enum: PriorityValues, example: 'MEDIUM' })
   priority!: Priority;
 
-  @ApiProperty({ description: 'Fecha de vencimiento', example: '2026-12-31T00:00:00.000Z', required: false, type: String })
-  dueDate?: string | null;
-
   @ApiProperty({ description: 'Fecha de creación', example: '2026-05-24T12:34:56.789Z' })
   createdAt!: string;
 
